@@ -451,6 +451,7 @@ document.querySelector("#downloadCustomer").addEventListener("click",()=>{
 });
 
 const shareModal=document.querySelector("#shareModal"), shareBackdrop=document.querySelector("#shareBackdrop"), shareHistoryKey="arc-process-dashboard-share-links-v1";
+const shareAppVersion="20261028-3";
 async function encodeShareData(value){
   const compressed=await compressShareData(value);
   return compressed?{key:"arc-z",value:compressed}:{key:"arc-share",value:encodeURIComponent(JSON.stringify(value))};
@@ -474,7 +475,7 @@ async function makeShareLink(){
   const button=document.querySelector("#makeShareLink"), previous=button.textContent;
   button.disabled=true; button.textContent="짧은 링크 만드는 중…";
   try{
-    const exportData=clone(data); exportData.instanceId=makeId(); const encoded=await encodeShareData(exportData); const base=new URL(location.href); base.hash=""; base.search=""; base.hash=`${encoded.key}=${encoded.value}`; const url=base.href; const name=document.querySelector("#shareName").value.trim()||"고객 공정 대시보드"; document.querySelector("#shareUrl").value=url; document.querySelector("#copyShareLink").disabled=false; const history=loadShareHistory(); history.unshift({id:makeId(),name,url,createdAt:new Date().toISOString()}); saveShareHistory(history); renderShareHistory();
+    const exportData=clone(data); exportData.instanceId=makeId(); const encoded=await encodeShareData(exportData); const base=new URL(location.href); base.hash=""; base.search=""; base.searchParams.set("v",shareAppVersion); base.hash=`${encoded.key}=${encoded.value}`; const url=base.href; const name=document.querySelector("#shareName").value.trim()||"고객 공정 대시보드"; document.querySelector("#shareUrl").value=url; document.querySelector("#copyShareLink").disabled=false; const history=loadShareHistory(); history.unshift({id:makeId(),name,url,createdAt:new Date().toISOString()}); saveShareHistory(history); renderShareHistory();
   }finally{button.disabled=false; button.textContent=previous;}
 }
 
