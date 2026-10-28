@@ -1,3 +1,4 @@
+(async()=>{
 const defaultSchedule = [];
 
 const defaultData = {
@@ -25,15 +26,39 @@ function getChecklistGroups(){
 }
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
-function decodeShareData(){
-  const encoded=new URLSearchParams(location.hash.slice(1)).get("arc-share")||"";
+const bytesToBase64Url=(bytes)=>{
+  let binary="";
+  for(let offset=0;offset<bytes.length;offset+=0x8000)binary+=String.fromCharCode(...bytes.subarray(offset,offset+0x8000));
+  return btoa(binary).replaceAll("+","-").replaceAll("/","_").replace(/=+$/g,"");
+};
+const base64UrlToBytes=(value)=>{
+  const padded=value.replaceAll("-","+").replaceAll("_","/")+"=".repeat((4-value.length%4)%4);
+  const binary=atob(padded), bytes=new Uint8Array(binary.length);
+  for(let index=0;index<binary.length;index+=1)bytes[index]=binary.charCodeAt(index);
+  return bytes;
+};
+async function compressShareData(value){
+  if(!("CompressionStream" in globalThis))return null;
+  const stream=new Blob([JSON.stringify(value)]).stream().pipeThrough(new CompressionStream("gzip"));
+  return bytesToBase64Url(new Uint8Array(await new Response(stream).arrayBuffer()));
+}
+async function decompressShareData(value){
+  if(!("DecompressionStream" in globalThis))return null;
+  const stream=new Blob([base64UrlToBytes(value)]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return JSON.parse(await new Response(stream).text());
+}
+async function decodeShareData(){
+  const params=new URLSearchParams(location.hash.slice(1));
+  const compressed=params.get("arc-z")||"";
+  if(compressed){try{return await decompressShareData(compressed);}catch{return null;}}
+  const encoded=params.get("arc-share")||"";
   if(!encoded)return null;
   try{return JSON.parse(encoded);}catch{return null;}
 }
 const seedNode = document.querySelector("#arc-seed-data");
 let seedData;
 try { seedData = seedNode?.textContent.trim() ? JSON.parse(seedNode.textContent) : null; } catch { seedData = null; }
-const sharedData=decodeShareData();
+const sharedData=await decodeShareData();
 const isCustomerView=Boolean(sharedData);
 const initial = sharedData || seedData || clone(defaultData);
 let dataStorageKey = `arc-process-dashboard-data-${initial.instanceId || "template"}`;
@@ -426,7 +451,10 @@ document.querySelector("#downloadCustomer").addEventListener("click",()=>{
 });
 
 const shareModal=document.querySelector("#shareModal"), shareBackdrop=document.querySelector("#shareBackdrop"), shareHistoryKey="arc-process-dashboard-share-links-v1";
-function encodeShareData(value){return encodeURIComponent(JSON.stringify(value));}
+async function encodeShareData(value){
+  const compressed=await compressShareData(value);
+  return compressed?{key:"arc-z",value:compressed}:{key:"arc-share",value:encodeURIComponent(JSON.stringify(value))};
+}
 function loadShareHistory(){try{return JSON.parse(localStorage.getItem(shareHistoryKey))||[];}catch{return [];}}
 function saveShareHistory(items){try{localStorage.setItem(shareHistoryKey,JSON.stringify(items.slice(0,12)));}catch{}}
 async function copyTextToClipboard(value,button){
@@ -442,8 +470,12 @@ function openShareModal(){
   closeEditor(); document.querySelector("#shareName").value=[data.project.customer,data.project.home].filter(Boolean).join(" · ")||"고객 공정 대시보드"; document.querySelector("#shareUrl").value=""; document.querySelector("#copyShareLink").disabled=true; const notice=document.querySelector("#shareModeNotice"); notice.textContent=location.protocol==="file:"?"현재 파일에서 만든 주소는 이 컴퓨터에서만 열립니다. 실제 고객 전달용 링크는 온라인 대시보드에서 만들어 주세요.":"이 주소를 받은 고객은 별도 편집 버튼 없이 일정과 체크리스트만 볼 수 있습니다."; renderShareHistory(); shareModal.hidden=false; shareBackdrop.hidden=false; document.body.classList.add("share-open");
 }
 function closeShareModal(){shareModal.hidden=true; shareBackdrop.hidden=true; document.body.classList.remove("share-open");}
-function makeShareLink(){
-  const exportData=clone(data); exportData.instanceId=makeId(); const base=new URL(location.href); base.hash=""; base.search=""; base.hash=`arc-share=${encodeShareData(exportData)}`; const url=base.href; const name=document.querySelector("#shareName").value.trim()||"고객 공정 대시보드"; document.querySelector("#shareUrl").value=url; document.querySelector("#copyShareLink").disabled=false; const history=loadShareHistory(); history.unshift({id:makeId(),name,url,createdAt:new Date().toISOString()}); saveShareHistory(history); renderShareHistory();
+async function makeShareLink(){
+  const button=document.querySelector("#makeShareLink"), previous=button.textContent;
+  button.disabled=true; button.textContent="짧은 링크 만드는 중…";
+  try{
+    const exportData=clone(data); exportData.instanceId=makeId(); const encoded=await encodeShareData(exportData); const base=new URL(location.href); base.hash=""; base.search=""; base.hash=`${encoded.key}=${encoded.value}`; const url=base.href; const name=document.querySelector("#shareName").value.trim()||"고객 공정 대시보드"; document.querySelector("#shareUrl").value=url; document.querySelector("#copyShareLink").disabled=false; const history=loadShareHistory(); history.unshift({id:makeId(),name,url,createdAt:new Date().toISOString()}); saveShareHistory(history); renderShareHistory();
+  }finally{button.disabled=false; button.textContent=previous;}
 }
 
 const inlineEditToolbar=document.querySelector("#inlineEditToolbar");
@@ -498,3 +530,4 @@ document.querySelector("#inlineEditButton").addEventListener("click",startInline
 document.querySelector("#shareButton").addEventListener("click",openShareModal); document.querySelector("#closeShare").addEventListener("click",closeShareModal); shareBackdrop.addEventListener("click",closeShareModal); document.querySelector("#makeShareLink").addEventListener("click",makeShareLink); document.querySelector("#copyShareLink").addEventListener("click",(event)=>copyTextToClipboard(document.querySelector("#shareUrl").value,event.currentTarget));
 document.querySelector("#resetChecklist").addEventListener("click",()=>{try{localStorage.removeItem(checklistStorageKey);}catch{} renderChecklist();}); document.querySelector("#printButton").addEventListener("click",()=>window.print());
 renderAll();
+})();
