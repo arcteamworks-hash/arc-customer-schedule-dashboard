@@ -15,7 +15,7 @@
   <meta name="twitter:description" content="여기를 눌러 공정 일정과 준비사항을 확인하세요." />
   <link rel="canonical" href="https://arcteamworks-hash.github.io/arc-customer-schedule-dashboard/" />
   <title>ARC 고객 방문·준비 대시보드</title>
-  <link rel="stylesheet" href="./styles.css?v=20261028-4" />
+  <link rel="stylesheet" href="./styles.css?v=20261028-5" />
 </head>
 <body>
   <div class="paper-glow" aria-hidden="true"></div>
@@ -166,10 +166,12 @@
     </div>
     <p class="share-intro">현재 화면의 고객 정보와 공정 일정을 링크에 담습니다. 고객이 연 링크에는 글자 편집과 정보 수정 버튼이 표시되지 않습니다.</p>
     <p class="share-mode-notice" id="shareModeNotice"></p>
+    <p class="share-privacy"><b>짧은 링크 안내</b> · ‘짧은 링크 만들기’를 누르면 고객명·현장 정보·일정이 포함된 원본 링크가 무료 단축주소 서비스 is.gd에 전송됩니다. 생성된 단축주소는 수정하거나 삭제할 수 없습니다.</p>
     <label class="share-field">링크 이름<input id="shareName" type="text" placeholder="홍길동 고객 · 현장명" /></label>
     <label class="share-field">고객에게 전달할 링크<textarea id="shareUrl" rows="4" readonly></textarea></label>
     <div class="share-actions">
-      <button class="secondary-button" id="makeShareLink" type="button">현재 내용으로 링크 만들기</button>
+      <button class="primary-button" id="makeShareLink" type="button">짧은 링크 만들기</button>
+      <button class="secondary-button" id="makePrivateShareLink" type="button">외부 전송 없이 만들기</button>
       <button class="primary-button" id="copyShareLink" type="button" disabled>카카오톡용 링크 복사</button>
     </div>
     <section class="share-history" aria-labelledby="shareHistoryTitle">
@@ -286,6 +288,6 @@
   </footer>
 
   <script id="arc-seed-data" type="application/json"></script>
-  <script src="./app.js?v=20261028-4"></script>
+  <script src="./app.js?v=20261028-5"></script>
 </body>
 </html>

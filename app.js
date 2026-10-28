@@ -451,7 +451,7 @@ document.querySelector("#downloadCustomer").addEventListener("click",()=>{
 });
 
 const shareModal=document.querySelector("#shareModal"), shareBackdrop=document.querySelector("#shareBackdrop"), shareHistoryKey="arc-process-dashboard-share-links-v1";
-const shareAppVersion="20261028-4";
+const shareAppVersion="20261028-5";
 async function encodeShareData(value){
   const compressed=await compressShareData(value);
   return compressed?{key:"arc-z",value:compressed}:{key:"arc-share",value:encodeURIComponent(JSON.stringify(value))};
@@ -471,12 +471,30 @@ function openShareModal(){
   closeEditor(); document.querySelector("#shareName").value=[data.project.customer,data.project.home].filter(Boolean).join(" · ")||"고객 공정 대시보드"; document.querySelector("#shareUrl").value=""; document.querySelector("#copyShareLink").disabled=true; const notice=document.querySelector("#shareModeNotice"); notice.textContent=location.protocol==="file:"?"현재 파일에서 만든 주소는 이 컴퓨터에서만 열립니다. 실제 고객 전달용 링크는 온라인 대시보드에서 만들어 주세요.":"카카오톡 대화창에 링크만 단독으로 붙여넣고 잠시 기다리면 ARC 제목·설명 카드가 표시됩니다."; renderShareHistory(); shareModal.hidden=false; shareBackdrop.hidden=false; document.body.classList.add("share-open");
 }
 function closeShareModal(){shareModal.hidden=true; shareBackdrop.hidden=true; document.body.classList.remove("share-open");}
-async function makeShareLink(){
-  const button=document.querySelector("#makeShareLink"), previous=button.textContent;
-  button.disabled=true; button.textContent="짧은 링크 만드는 중…";
+async function buildCompressedShareUrl(){
+  const exportData=clone(data); exportData.instanceId=makeId(); const encoded=await encodeShareData(exportData); const base=new URL(location.href); base.hash=""; base.search=""; base.searchParams.set("v",shareAppVersion); base.hash=`${encoded.key}=${encoded.value}`; return base.href;
+}
+function shortenUrlWithIsGd(url){
+  return new Promise((resolve,reject)=>{
+    const callback=`arcShort_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script=document.createElement("script");
+    const timer=setTimeout(()=>finish(new Error("단축주소 응답 시간이 초과되었습니다.")),15000);
+    const finish=(error,value)=>{clearTimeout(timer); script.remove(); try{delete window[callback];}catch{} if(error)reject(error); else resolve(value);};
+    window[callback]=(result)=>result?.shorturl?finish(null,result.shorturl):finish(new Error(result?.errormessage||"단축주소를 만들지 못했습니다."));
+    script.onerror=()=>finish(new Error("단축주소 서비스에 연결하지 못했습니다."));
+    const endpoint=new URL("https://is.gd/create.php"); endpoint.searchParams.set("format","json"); endpoint.searchParams.set("callback",callback); endpoint.searchParams.set("url",url); script.src=endpoint.href; document.head.append(script);
+  });
+}
+function saveCreatedShareLink(url,name){
+  document.querySelector("#shareUrl").value=url; document.querySelector("#copyShareLink").disabled=false; const history=loadShareHistory(); history.unshift({id:makeId(),name,url,createdAt:new Date().toISOString()}); saveShareHistory(history); renderShareHistory();
+}
+async function makeShareLink(useShortener=true){
+  const shortButton=document.querySelector("#makeShareLink"), privateButton=document.querySelector("#makePrivateShareLink"), button=useShortener?shortButton:privateButton, previous=button.textContent;
+  shortButton.disabled=true; privateButton.disabled=true; button.textContent=useShortener?"단축주소 만드는 중…":"링크 만드는 중…";
   try{
-    const exportData=clone(data); exportData.instanceId=makeId(); const encoded=await encodeShareData(exportData); const base=new URL(location.href); base.hash=""; base.search=""; base.searchParams.set("v",shareAppVersion); base.hash=`${encoded.key}=${encoded.value}`; const url=base.href; const name=document.querySelector("#shareName").value.trim()||"고객 공정 대시보드"; document.querySelector("#shareUrl").value=url; document.querySelector("#copyShareLink").disabled=false; const history=loadShareHistory(); history.unshift({id:makeId(),name,url,createdAt:new Date().toISOString()}); saveShareHistory(history); renderShareHistory();
-  }finally{button.disabled=false; button.textContent=previous;}
+    const longUrl=await buildCompressedShareUrl(); const name=document.querySelector("#shareName").value.trim()||"고객 공정 대시보드"; const url=useShortener?await shortenUrlWithIsGd(longUrl):longUrl; saveCreatedShareLink(url,name); const notice=document.querySelector("#shareModeNotice"); notice.textContent=useShortener?"짧은 고객 링크가 만들어졌습니다. 복사해서 카카오톡에 링크만 단독으로 붙여넣으세요.":"외부 서비스에 전송하지 않은 압축 링크입니다. 일정이 많으면 주소가 길게 표시될 수 있습니다.";
+  }catch(error){const notice=document.querySelector("#shareModeNotice"); notice.textContent=`짧은 링크 생성 실패 · ${error.message} 잠시 후 다시 시도하거나 ‘외부 전송 없이 만들기’를 이용하세요.`;
+  }finally{shortButton.disabled=false; privateButton.disabled=false; button.textContent=previous;}
 }
 
 const inlineEditToolbar=document.querySelector("#inlineEditToolbar");
@@ -528,7 +546,7 @@ document.querySelector("#addOcrRow").addEventListener("click",()=>{ocrRows.push(
 document.querySelector("#ocrBaseYear").addEventListener("change",recalculateOcrYears); applyOcrButton.addEventListener("click",applyRecognizedSchedule);
 document.querySelector("#editButton").addEventListener("click",openEditor); document.querySelector("#closeEditor").addEventListener("click",closeEditor); backdrop.addEventListener("click",closeEditor);
 document.querySelector("#inlineEditButton").addEventListener("click",startInlineEdit); document.querySelector("#saveInlineEdit").addEventListener("click",saveInlineEdit); document.querySelector("#cancelInlineEdit").addEventListener("click",cancelInlineEdit);
-document.querySelector("#shareButton").addEventListener("click",openShareModal); document.querySelector("#closeShare").addEventListener("click",closeShareModal); shareBackdrop.addEventListener("click",closeShareModal); document.querySelector("#makeShareLink").addEventListener("click",makeShareLink); document.querySelector("#copyShareLink").addEventListener("click",(event)=>copyTextToClipboard(document.querySelector("#shareUrl").value,event.currentTarget));
+document.querySelector("#shareButton").addEventListener("click",openShareModal); document.querySelector("#closeShare").addEventListener("click",closeShareModal); shareBackdrop.addEventListener("click",closeShareModal); document.querySelector("#makeShareLink").addEventListener("click",()=>makeShareLink(true)); document.querySelector("#makePrivateShareLink").addEventListener("click",()=>makeShareLink(false)); document.querySelector("#copyShareLink").addEventListener("click",(event)=>copyTextToClipboard(document.querySelector("#shareUrl").value,event.currentTarget));
 document.querySelector("#resetChecklist").addEventListener("click",()=>{try{localStorage.removeItem(checklistStorageKey);}catch{} renderChecklist();}); document.querySelector("#printButton").addEventListener("click",()=>window.print());
 renderAll();
 })();
