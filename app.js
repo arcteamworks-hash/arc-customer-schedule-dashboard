@@ -19,7 +19,7 @@ function getChecklistGroups(){
     ] },
     { key:"check.group.order", title:copyText("check.group.order","발주·준비"), color:"#b49a66", types:["deadline"], items:getOrderDeadlines().map((entry)=>{const titleKey=`check.${entry.id}.title`,detailKey=`check.${entry.id}.detail`,connection=copyText(detailKey,entry.connection); return [entry.id,copyText(titleKey,entry.title),entry.due?`${compactDate(entry.due)}까지 · ${connection}`:`${connection} · 일정 입력 후 자동 계산`,titleKey,detailKey];}) },
     { key:"check.group.required", title:copyText("check.group.required","필수 방문"), color:"#c98268", types:["required"], items:[] },
-    { key:"check.group.caulking", title:copyText("check.group.caulking","코킹"), color:"#506a58", types:[], items:[["caulking-color",copyText("check.caulking.title","코킹 시공 방식과 실리콘 색상 확인"),copyText("check.caulking.detail","소개 팀 작업은 색상 선택 불필요 · 별도 시공은 희망 색상 사전 전달 또는 현장 선택"),"check.caulking.title","check.caulking.detail"]] },
+    { key:"check.group.caulking", title:copyText("check.group.caulking","코킹"), color:"#506a58", types:[], items:[["caulking-color",copyText("check.caulking.title","코킹 시공 방식과 실리콘 색상 확인"),copyText("check.caulking.detail","소개 팀 작업은 색상 선택 가능 · 별도 시공은 희망 색상 사전 확인 필요"),"check.caulking.title","check.caulking.detail"]] },
   ];
   data.schedule.forEach((item)=>{const group=groups.find((entry)=>entry.types.includes(item.type)); const duplicateFilmOrder=group?.key==="check.group.order"&&matchesAny(item,["필름"]); if(group&&!duplicateFilmOrder)group.items.push([item.id,`${shortDate(item.date)} · ${item.title}`,[item.ruleNote,item.prepare||item.detail].filter(Boolean).join(" · ")||"준비사항을 입력하세요."]);});
   return groups.filter((group)=>group.items.length);
@@ -111,7 +111,9 @@ function applyAutomaticFirstDayDetails(){
     const keys=processKeys(item),isFirst=keys.some((key)=>!seen.has(key));
     if(item.autoDetail===true||item.detail==="공정표 이미지 인식 후 확인한 일정"){
       item.autoDetail=true;
-      item.detail=isFirst?"최종 작업 내용 현장팀에게 전달":"";
+      item.detail=isFirst
+        ? (keys.includes("필름")?"필름 공정 첫날 방문이 어려울 경우, 필름 시공 위치에 필름 넘버를 표기하거나 사진을 촬영해 필름 팀장님께 전달해야 합니다.":"최종 작업 내용 현장팀에게 전달")
+        : "";
     }
     keys.forEach((key)=>seen.add(key));
   });
@@ -473,7 +475,7 @@ document.querySelector("#downloadCustomer").addEventListener("click",()=>{
 });
 
 const shareModal=document.querySelector("#shareModal"), shareBackdrop=document.querySelector("#shareBackdrop"), shareHistoryKey="arc-process-dashboard-share-links-v1";
-const shareAppVersion="20261028-9";
+const shareAppVersion="20261028-10";
 async function encodeShareData(value){
   const compressed=await compressShareData(value);
   return compressed?{key:"arc-z",value:compressed}:{key:"arc-share",value:encodeURIComponent(JSON.stringify(value))};
