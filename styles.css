@@ -73,6 +73,8 @@ button { color: inherit; }
 }
 .ghost-button { padding: 8px 12px; border: 1px solid var(--sage-dark); border-radius: 999px; background: transparent; font-size: .78rem; font-weight: 700; line-height: 1.15; white-space: nowrap; }
 .ghost-button:hover { background: var(--sage-dark); color: white; }
+.reset-header-button { border-color: var(--clay); color: #a4553c; }
+.reset-header-button:hover { background: var(--clay); color: white; }
 
 .inline-edit-toolbar {
   position: fixed;
@@ -406,6 +408,7 @@ button.calendar-day:hover { transform: translateY(-2px); box-shadow: 0 8px 20px 
 .detail-type.deadline { background: rgba(133,155,157,.32); }
 .calendar-detail h3 { flex: 1 1 180px; min-width: 0; margin: 0; font-size: 1.45rem; line-height: 1.3; overflow-wrap: anywhere; }
 .calendar-detail p { margin: 10px 0 0; color: #dfe8e1; line-height: 1.65; overflow-wrap: anywhere; }
+#detailText { min-height: 1.65em; }
 .calendar-detail .detail-prepare { margin-top: 14px; padding-top: 14px; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 6px 12px; align-items: start; border-top: 1px solid rgba(255,255,255,.2); color: white; font-weight: 800; line-height: 1.55; }
 .detail-prepare b { color: #cbd8cf; white-space: nowrap; }
 .detail-prepare span { min-width: 0; overflow-wrap: anywhere; }

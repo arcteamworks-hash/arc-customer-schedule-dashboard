@@ -95,7 +95,29 @@ const orderRules = [
 
 function firstMatching(keywords){return [...data.schedule].sort(byDate).find((item)=>matchesAny(item,keywords));}
 function getOrderDeadlines(){return orderRules.map((rule)=>{const event=firstMatching(rule.keywords); return {...rule,event,due:event?minusDays(event.date,7):""};});}
+const processGroups = [
+  ["철거",["철거"]],["목공",["목공"]],["전기",["전기"]],["타일",["타일"]],
+  ["설비",["설비","배관"]],["욕실",["욕실세팅","욕실셋팅","욕실설치"]],["필름",["필름"]],
+  ["마루",["마루"]],["탄성",["탄성코트","탄성"]],["도배",["도배"]],["도어",["도어"]],
+  ["가구",["가구","싱크"]],["청소",["입주청소","청소"]],["코킹",["코킹"]],["폐기물",["폐기물"]],
+];
+function processKeys(item){
+  const keys=processGroups.filter(([,keywords])=>matchesAny(item,keywords)).map(([key])=>key);
+  return keys.length?keys:[normalizedText(item)||item.id];
+}
+function applyAutomaticFirstDayDetails(){
+  const seen=new Set();
+  [...data.schedule].sort(byDate).forEach((item)=>{
+    const keys=processKeys(item),isFirst=keys.some((key)=>!seen.has(key));
+    if(item.autoDetail===true||item.detail==="공정표 이미지 인식 후 확인한 일정"){
+      item.autoDetail=true;
+      item.detail=isFirst?"최종 작업 내용 현장팀에게 전달":"";
+    }
+    keys.forEach((key)=>seen.add(key));
+  });
+}
 function applyScheduleRules(){
+  applyAutomaticFirstDayDetails();
   data.schedule.forEach((item)=>{item.manualType=item.manualType||item.type||"general"; if(["optional","marking"].includes(item.manualType))item.manualType="general"; item.type=item.manualType; item.ruleNote="";});
   const firstDayRules=[
     {keywords:["철거"],note:"철거 첫 시공일 · 현장 방문 필수"},
@@ -140,7 +162,7 @@ function selectCalendarEvent(item) {
   document.querySelector(`[data-id="${CSS.escape(item.id)}"]`)?.classList.add("selected");
   document.querySelector("#detailDate").textContent=formatDate(item.date);
   const title=document.querySelector("#detailTitle"); title.textContent=item.title; title.dataset.eventId=item.id; title.dataset.eventField="title";
-  const detail=document.querySelector("#detailText"); detail.textContent=item.detail||"세부 설명이 없습니다."; detail.dataset.eventId=item.id; detail.dataset.eventField="detail";
+  const detail=document.querySelector("#detailText"); detail.textContent=item.detail||""; detail.dataset.eventId=item.id; detail.dataset.eventField="detail";
   const prepare=document.querySelector("#detailPrepare"); prepare.textContent=[item.ruleNote,item.prepare].filter(Boolean).join(" · ")||"준비사항을 확인하세요."; prepare.dataset.eventId=item.id; prepare.dataset.eventField="prepare";
   const type=document.querySelector("#detailType"); type.className=`detail-type ${item.type}`; type.textContent=typeLabel(item.type); type.dataset.copyKey=`type.${item.type}`;
 }
@@ -182,7 +204,7 @@ function renderPrintDetails(){
     const article=document.createElement("article"); article.className="print-detail-item";
     const time=document.createElement("time"); time.textContent=new Intl.DateTimeFormat("ko-KR",{month:"long",day:"numeric",weekday:"short"}).format(isoDate(item.date));
     const body=document.createElement("div"), title=document.createElement("div"), badge=document.createElement("span"), strong=document.createElement("strong"), detail=document.createElement("p"), prepare=document.createElement("p"), prepareLabel=document.createElement("b");
-    title.className="print-detail-title"; badge.className=`print-detail-type ${item.type}`; badge.textContent=typeLabel(item.type); strong.textContent=item.title; detail.className="print-detail-copy"; detail.textContent=item.detail||"별도 설명 없음"; prepare.className="print-detail-prep"; prepareLabel.textContent="준비"; prepare.append(prepareLabel,document.createTextNode([item.ruleNote,item.prepare].filter(Boolean).join(" · ")||"별도 준비사항 없음")); title.append(badge,strong); body.append(title,detail,prepare); article.append(time,body); list.append(article);
+    title.className="print-detail-title"; badge.className=`print-detail-type ${item.type}`; badge.textContent=typeLabel(item.type); strong.textContent=item.title; detail.className="print-detail-copy"; detail.textContent=item.detail||""; prepare.className="print-detail-prep"; prepareLabel.textContent="준비"; prepare.append(prepareLabel,document.createTextNode([item.ruleNote,item.prepare].filter(Boolean).join(" · ")||"별도 준비사항 없음")); title.append(badge,strong); body.append(title,detail,prepare); article.append(time,body); list.append(article);
   });
 }
 
@@ -413,7 +435,7 @@ async function recognizeScheduleImage(file){
 function applyRecognizedSchedule(){
   const validRows=ocrRows.map((row)=>({...row,date:String(row.date||""),title:String(row.title||"").trim(),short:String(row.short||"").trim()})).filter((row)=>/^\d{4}-\d{2}-\d{2}$/.test(row.date)&&row.title);
   if(!validRows.length){updateOcrNotice("반영할 일정을 확인해 주세요.","날짜와 공정명이 입력된 일정이 한 개 이상 필요합니다."); return;}
-  const recognized=validRows.map((row)=>({id:makeId(),date:row.date,short:(row.short||row.title).slice(0,8),title:row.title,type:"general",manualType:"general",detail:"공정표 이미지 인식 후 확인한 일정",prepare:""}));
+  const recognized=validRows.map((row)=>({id:makeId(),date:row.date,short:(row.short||row.title).slice(0,8),title:row.title,type:"general",manualType:"general",detail:"",prepare:"",autoDetail:true}));
   const mode=document.querySelector('input[name="ocrApplyMode"]:checked')?.value||"replace";
   if(mode==="replace")data.schedule=recognized;
   else {const keys=new Set(data.schedule.map((item)=>`${item.date}|${normalizedText(item)}`)); recognized.forEach((item)=>{const key=`${item.date}|${normalizedText(item)}`; if(!keys.has(key)){data.schedule.push(item); keys.add(key);}});}
@@ -435,7 +457,7 @@ function loadEventFields(item){document.querySelector("#editEventDate").value=it
 document.querySelector("#dashboardEditor").addEventListener("submit",(event)=>{
   event.preventDefault(); data.project={customer:document.querySelector("#editCustomer").value.trim(),home:document.querySelector("#editHome").value.trim(),area:document.querySelector("#editArea").value.trim(),start:document.querySelector("#editStart").value,end:document.querySelector("#editEnd").value};
   data.display={title:document.querySelector("#editHeroTitle").value.trim()||defaultData.display.title,description:document.querySelector("#editHeroDescription").value.trim()||defaultData.display.description,font:document.querySelector("#editFontFamily").value,scale:Number(document.querySelector("#editFontScale").value)||100};
-  const selectedType=document.querySelector("#editEventType").value; const item={id:editingEventId||makeId(),date:document.querySelector("#editEventDate").value,short:document.querySelector("#editEventShort").value.trim(),title:document.querySelector("#editEventTitle").value.trim(),type:selectedType,manualType:selectedType,detail:document.querySelector("#editEventDetail").value.trim(),prepare:document.querySelector("#editEventPrepare").value.trim()};
+  const selectedType=document.querySelector("#editEventType").value; const item={id:editingEventId||makeId(),date:document.querySelector("#editEventDate").value,short:document.querySelector("#editEventShort").value.trim(),title:document.querySelector("#editEventTitle").value.trim(),type:selectedType,manualType:selectedType,detail:document.querySelector("#editEventDetail").value.trim(),prepare:document.querySelector("#editEventPrepare").value.trim(),autoDetail:false};
   if(item.date&&item.short&&item.title){const index=data.schedule.findIndex((entry)=>entry.id===item.id); if(index>=0)data.schedule[index]=item; else data.schedule.push(item); editingEventId=item.id; selectedEventId=item.id;}
   persistData(); renderAll(); closeEditor();
 });
@@ -451,7 +473,7 @@ document.querySelector("#downloadCustomer").addEventListener("click",()=>{
 });
 
 const shareModal=document.querySelector("#shareModal"), shareBackdrop=document.querySelector("#shareBackdrop"), shareHistoryKey="arc-process-dashboard-share-links-v1";
-const shareAppVersion="20261028-8";
+const shareAppVersion="20261028-9";
 async function encodeShareData(value){
   const compressed=await compressShareData(value);
   return compressed?{key:"arc-z",value:compressed}:{key:"arc-share",value:encodeURIComponent(JSON.stringify(value))};
@@ -527,7 +549,7 @@ function saveInlineEdit(){
       if(eventField==="prepare"){
         if(item.ruleNote&&value.startsWith(item.ruleNote))value=value.slice(item.ruleNote.length).replace(/^\s*·\s*/,"");
         item.prepare=value==="준비사항을 확인하세요."?"":value;
-      }else if(eventField==="detail")item.detail=value==="세부 설명이 없습니다."?"":value;
+      }else if(eventField==="detail"){item.detail=value; item.autoDetail=false;}
       else item[eventField]=value;
     }
   });
@@ -539,6 +561,13 @@ function cancelInlineEdit(){
   endInlineEdit(); renderAll();
 }
 
+function resetDashboard(){
+  if(isCustomerView||!confirm("공정표, 고객 정보, 수정한 글자, 체크 상태를 모두 지우고 처음부터 다시 시작할까요?\n\n이 작업은 되돌릴 수 없습니다."))return;
+  data=clone(defaultData); data.instanceId=initial.instanceId||defaultData.instanceId; selectedEventId=null; editingEventId=null;
+  try{localStorage.removeItem(checklistStorageKey); localStorage.setItem(dataStorageKey,JSON.stringify(data));}catch{}
+  endInlineEdit(); closeEditor(); closeOcrModal(); closeShareModal(); renderAll(); window.scrollTo({top:0,behavior:"smooth"});
+}
+
 document.querySelector("#scanButton").addEventListener("click",openImagePicker); document.querySelector("#scanEditorButton").addEventListener("click",openImagePicker); document.querySelector("#ocrReselect").addEventListener("click",openImagePicker);
 scheduleImageInput.addEventListener("change",(event)=>{const file=event.target.files?.[0]; if(file)recognizeScheduleImage(file);});
 document.querySelector("#closeOcr").addEventListener("click",closeOcrModal); document.querySelector("#cancelOcr").addEventListener("click",closeOcrModal); ocrBackdrop.addEventListener("click",closeOcrModal);
@@ -547,6 +576,6 @@ document.querySelector("#ocrBaseYear").addEventListener("change",recalculateOcrY
 document.querySelector("#editButton").addEventListener("click",openEditor); document.querySelector("#closeEditor").addEventListener("click",closeEditor); backdrop.addEventListener("click",closeEditor);
 document.querySelector("#inlineEditButton").addEventListener("click",startInlineEdit); document.querySelector("#saveInlineEdit").addEventListener("click",saveInlineEdit); document.querySelector("#cancelInlineEdit").addEventListener("click",cancelInlineEdit);
 document.querySelector("#shareButton").addEventListener("click",openShareModal); document.querySelector("#closeShare").addEventListener("click",closeShareModal); shareBackdrop.addEventListener("click",closeShareModal); document.querySelector("#makeShareLink").addEventListener("click",()=>makeShareLink(true)); document.querySelector("#makePrivateShareLink").addEventListener("click",()=>makeShareLink(false)); document.querySelector("#copyShareLink").addEventListener("click",(event)=>copyTextToClipboard(document.querySelector("#shareUrl").value,event.currentTarget));
-document.querySelector("#resetChecklist").addEventListener("click",()=>{try{localStorage.removeItem(checklistStorageKey);}catch{} renderChecklist();}); document.querySelector("#printButton").addEventListener("click",()=>window.print());
+document.querySelector("#resetDashboard").addEventListener("click",resetDashboard); document.querySelector("#resetChecklist").addEventListener("click",()=>{try{localStorage.removeItem(checklistStorageKey);}catch{} renderChecklist();}); document.querySelector("#printButton").addEventListener("click",()=>window.print());
 renderAll();
 })();
