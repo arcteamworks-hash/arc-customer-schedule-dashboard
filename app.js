@@ -451,7 +451,7 @@ document.querySelector("#downloadCustomer").addEventListener("click",()=>{
 });
 
 const shareModal=document.querySelector("#shareModal"), shareBackdrop=document.querySelector("#shareBackdrop"), shareHistoryKey="arc-process-dashboard-share-links-v1";
-const shareAppVersion="20261028-3";
+const shareAppVersion="20261028-4";
 async function encodeShareData(value){
   const compressed=await compressShareData(value);
   return compressed?{key:"arc-z",value:compressed}:{key:"arc-share",value:encodeURIComponent(JSON.stringify(value))};
