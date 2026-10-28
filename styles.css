@@ -477,7 +477,7 @@ button.calendar-day:hover { transform: translateY(-2px); box-shadow: 0 8px 20px 
 .text-button { padding: 8px 0; background: transparent; color: var(--muted); border-bottom: 1px solid currentColor; }
 .text-button:hover { color: var(--clay); }
 .checklist-grid { margin-top: 34px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-.checklist-film-note { margin: 28px 0 0; padding: 20px 24px 0; border-top: 1px solid var(--line); color: var(--green); font-size: .88rem; line-height: 1.65; text-align: center; }
+.checklist-film-note { margin: 28px 0 0; padding: 20px 24px 0; border-top: 1px solid var(--line); color: var(--green); font-size: .88rem; line-height: 1.65; text-align: left; }
 .checklist-group { padding: 28px; background: var(--paper); border: 1px solid var(--line); }
 .checklist-group h3 { padding-bottom: 16px; border-bottom: 3px solid var(--group-color); color: var(--group-color); }
 .check-item { display: grid; grid-template-columns: 22px 1fr; gap: 13px; padding: 15px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
