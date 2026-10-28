@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f5f0e7" />
+  <meta name="description" content="ARC TEAM WORKS 고객용 공정 방문 및 사전 준비 대시보드" />
+  <title>ARC 고객 방문·준비 대시보드</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="paper-glow" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="대시보드 처음으로">
+      <span class="brand-mark">ARC</span>
+      <span>TEAM WORKS</span>
+    </a>
+    <nav aria-label="주요 메뉴">
+      <a href="#schedule">일정</a>
+      <a href="#checklist">체크리스트</a>
+    </nav>
+    <div class="header-actions">
+      <button class="ghost-button scan-header-button admin-only" id="scanButton" type="button">공정표 인식</button>
+      <button class="ghost-button admin-only" id="inlineEditButton" type="button">글자 편집</button>
+      <button class="ghost-button admin-only" id="editButton" type="button">정보 수정</button>
+      <button class="ghost-button share-header-button admin-only" id="shareButton" type="button">고객 링크</button>
+      <button class="ghost-button print-button" id="printButton" type="button">PDF·인쇄</button>
+    </div>
+  </header>
+
+  <div class="inline-edit-toolbar" id="inlineEditToolbar" hidden>
+    <span><b>글자 편집 중</b> · 점선으로 표시된 글자를 눌러 수정하세요.</span>
+    <div>
+      <button class="inline-cancel" id="cancelInlineEdit" type="button">취소</button>
+      <button class="inline-save" id="saveInlineEdit" type="button">글자 저장</button>
+    </div>
+  </div>
+
+  <aside class="editor-panel" id="editorPanel" aria-labelledby="editorTitle" hidden>
+    <div class="editor-head">
+      <div><p class="eyebrow">EDIT DASHBOARD</p><h2 id="editorTitle">고객·현장 정보 수정</h2></div>
+      <button class="editor-close" id="closeEditor" type="button" aria-label="편집창 닫기">×</button>
+    </div>
+    <form id="dashboardEditor">
+      <section class="scan-entry" aria-labelledby="scanEntryTitle">
+        <div>
+          <span>IMAGE TO SCHEDULE</span>
+          <h3 id="scanEntryTitle">공정표 사진으로 자동 입력</h3>
+          <p>이미지를 분석한 뒤, 수정 가능한 확인표를 먼저 보여드립니다.</p>
+        </div>
+        <button class="scan-entry-button" id="scanEditorButton" type="button">이미지 선택</button>
+      </section>
+      <fieldset>
+        <legend>기본 정보</legend>
+        <div class="editor-grid">
+          <label>고객명<input id="editCustomer" type="text" placeholder="홍길동 고객님" /></label>
+          <label>현장명·주소<input id="editHome" type="text" /></label>
+          <label>평형·유형<input id="editArea" type="text" placeholder="33평 아파트" /></label>
+          <label>공사 시작일<input id="editStart" type="date" /></label>
+          <label>공사 종료일<input id="editEnd" type="date" /></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>화면 글자·폰트</legend>
+        <div class="editor-grid">
+          <label class="wide">메인 제목<input id="editHeroTitle" type="text" /></label>
+          <label class="wide">제목 아래 안내 문구<textarea id="editHeroDescription" rows="2"></textarea></label>
+          <label>폰트
+            <select id="editFontFamily">
+              <option value="arc">ARC 기본 고딕</option>
+              <option value="malgun">맑은 고딕</option>
+              <option value="serif">명조</option>
+            </select>
+          </label>
+          <label class="font-size-control">전체 글자 크기 <output id="fontSizeValue">100%</output><input id="editFontScale" type="range" min="85" max="115" step="5" value="100" /></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>달력 일정</legend>
+        <div class="event-toolbar">
+          <label>수정할 일정<select id="eventSelect"></select></label>
+          <button class="small-button" id="newEvent" type="button">+ 새 일정</button>
+        </div>
+        <div class="editor-grid event-fields">
+          <label>날짜<input id="editEventDate" type="date" /></label>
+          <label>달력 짧은 표시<input id="editEventShort" type="text" maxlength="8" /></label>
+          <label class="wide">일정 제목<input id="editEventTitle" type="text" /></label>
+          <label>구분<select id="editEventType"><option value="required">필수 방문</option><option value="deadline">발주·준비</option><option value="general">일반 공정</option></select></label>
+          <label class="wide">일정 설명<textarea id="editEventDetail" rows="2"></textarea></label>
+          <label class="wide">고객 준비사항<textarea id="editEventPrepare" rows="2"></textarea></label>
+        </div>
+        <button class="delete-button" id="deleteEvent" type="button">이 일정 삭제</button>
+      </fieldset>
+      <div class="editor-actions">
+        <button class="primary-button" type="submit">수정 내용 저장</button>
+        <button class="secondary-button" id="printFromEditor" type="button">PDF로 저장</button>
+        <button class="secondary-button" id="downloadCustomer" type="button">고객용 파일 저장</button>
+      </div>
+      <p class="editor-help">PDF로 저장을 누르면 전체 공정의 설명과 준비사항이 모두 펼쳐진 인쇄 화면이 열립니다. 고객용 파일 저장은 현재 정보가 담긴 수정 가능한 HTML 파일을 만듭니다.</p>
+    </form>
+  </aside>
+  <div class="editor-backdrop" id="editorBackdrop" hidden></div>
+
+  <input id="scheduleImageInput" type="file" accept="image/png,image/jpeg,image/webp,image/bmp" hidden />
+  <section class="ocr-modal" id="ocrModal" role="dialog" aria-modal="true" aria-labelledby="ocrTitle" hidden>
+    <div class="ocr-head">
+      <div>
+        <p class="eyebrow">IMAGE RECOGNITION</p>
+        <h2 id="ocrTitle">공정표 일정 확인</h2>
+      </div>
+      <button class="editor-close" id="closeOcr" type="button" aria-label="인식 결과 닫기">×</button>
+    </div>
+
+    <div class="ocr-layout">
+      <aside class="ocr-source">
+        <div class="ocr-image-frame"><img id="ocrPreviewImage" alt="선택한 공정표 미리보기" /></div>
+        <label class="ocr-year">기준 연도<input id="ocrBaseYear" type="number" min="2020" max="2100" step="1" /></label>
+        <button class="secondary-button ocr-reselect" id="ocrReselect" type="button">다른 이미지 선택</button>
+        <p>이미지는 외부에 저장하지 않고 이 브라우저에서만 분석합니다.</p>
+      </aside>
+
+      <div class="ocr-review">
+        <div class="ocr-notice">
+          <strong id="ocrNoticeTitle">이미지에서 일정을 읽고 있습니다.</strong>
+          <p id="ocrNoticeText">잠시만 기다려 주세요. 날짜와 공정명이 맞는지 확인한 뒤 수정할 수 있습니다.</p>
+        </div>
+        <div class="ocr-progress" id="ocrProgress" aria-live="polite">
+          <div><span id="ocrProgressBar"></span></div>
+          <p id="ocrProgressText">인식 준비 중</p>
+        </div>
+        <div class="ocr-table-wrap" id="ocrTableWrap" hidden>
+          <div class="ocr-table-heading">
+            <span>인식된 일정</span>
+            <button class="small-button" id="addOcrRow" type="button">+ 일정 추가</button>
+          </div>
+          <div class="ocr-table" id="ocrTable" aria-label="수정 가능한 인식 일정"></div>
+          <fieldset class="ocr-apply-mode">
+            <legend>반영 방법</legend>
+            <label><input type="radio" name="ocrApplyMode" value="replace" checked />현재 공정표로 교체</label>
+            <label><input type="radio" name="ocrApplyMode" value="append" />기존 일정에 추가</label>
+          </fieldset>
+        </div>
+      </div>
+    </div>
+
+    <div class="ocr-actions">
+      <button class="secondary-button" id="cancelOcr" type="button">취소</button>
+      <button class="primary-button" id="applyOcr" type="button" disabled>확인 후 일정 반영</button>
+    </div>
+  </section>
+  <div class="ocr-backdrop" id="ocrBackdrop" hidden></div>
+
+  <section class="share-modal" id="shareModal" role="dialog" aria-modal="true" aria-labelledby="shareTitle" hidden>
+    <div class="editor-head">
+      <div><p class="eyebrow">CUSTOMER LINK</p><h2 id="shareTitle">고객용 링크 만들기</h2></div>
+      <button class="editor-close" id="closeShare" type="button" aria-label="고객 링크 창 닫기">×</button>
+    </div>
+    <p class="share-intro">현재 화면의 고객 정보와 공정 일정을 링크에 담습니다. 고객이 연 링크에는 글자 편집과 정보 수정 버튼이 표시되지 않습니다.</p>
+    <p class="share-mode-notice" id="shareModeNotice"></p>
+    <label class="share-field">링크 이름<input id="shareName" type="text" placeholder="홍길동 고객 · 현장명" /></label>
+    <label class="share-field">고객에게 전달할 링크<textarea id="shareUrl" rows="4" readonly></textarea></label>
+    <div class="share-actions">
+      <button class="secondary-button" id="makeShareLink" type="button">현재 내용으로 링크 만들기</button>
+      <button class="primary-button" id="copyShareLink" type="button" disabled>링크 복사</button>
+    </div>
+    <section class="share-history" aria-labelledby="shareHistoryTitle">
+      <div><h3 id="shareHistoryTitle">최근 만든 고객 링크</h3><small>이 기기에만 저장되며 복사하거나 삭제할 수 있습니다.</small></div>
+      <div id="shareHistoryList"></div>
+    </section>
+  </section>
+  <div class="share-backdrop" id="shareBackdrop" hidden></div>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow" data-copy-key="hero.eyebrow">CUSTOMER PROJECT DASHBOARD</p>
+        <h1 id="hero-title" data-display-field="title">공정별 고객 방문<br />및 사전 준비</h1>
+        <p class="hero-description" data-display-field="description">현장에 꼭 가야 하는 날과 미리 결정할 일을 한 화면에서 확인하세요.</p>
+        <div class="project-meta">
+          <span id="projectCustomer"></span>
+          <span id="projectHome"></span>
+          <span id="projectPeriod"></span>
+        </div>
+        <p class="edit-hint" data-copy-key="hero.editHint">상단의 <b>공정표 인식</b>으로 이미지를 자동 입력하거나, <b>정보 수정</b>에서 직접 바꾼 뒤 고객용 파일로 저장할 수 있습니다.</p>
+      </div>
+      <aside class="next-action" aria-labelledby="next-action-title">
+        <p class="eyebrow" id="next-action-title" data-copy-key="next.eyebrow">NEXT ACTION</p>
+        <div class="next-action-date" id="nextActionDate"></div>
+        <h2 id="nextActionTitle">등록된 일정 없음</h2>
+        <p id="nextActionDetail">정보 수정에서 첫 공정 일정을 입력하세요.</p>
+        <div class="countdown" id="countdown"></div>
+      </aside>
+    </section>
+
+    <section class="metrics" aria-label="핵심 일정 요약">
+      <article>
+        <span class="metric-number" id="requiredCount">0</span>
+        <span class="metric-label" data-copy-key="type.required">필수 방문</span>
+        <small id="requiredNames"></small>
+      </article>
+      <article>
+        <span class="metric-number" id="deadlineCount">0</span>
+        <span class="metric-label" data-copy-key="type.deadline">발주·준비</span>
+        <small id="deadlineNames"></small>
+      </article>
+      <article class="progress-metric">
+        <div class="progress-ring" id="progressRing" style="--progress: 0">
+          <span id="progressPercent">0%</span>
+        </div>
+        <div>
+          <span class="metric-label" data-copy-key="metrics.progress">준비 완료율</span>
+          <small id="progressCount">0 / 12 완료</small>
+        </div>
+      </article>
+    </section>
+
+    <section class="section" id="schedule" aria-labelledby="schedule-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow" data-copy-key="schedule.eyebrow">PROJECT SCHEDULE</p>
+          <h2 id="schedule-title" data-copy-key="schedule.title">공정 달력</h2>
+          <p class="section-intro" data-copy-key="schedule.intro">공사기간의 달력을 위아래로 확인하세요. 표시된 날짜를 누르면 준비사항이 펼쳐집니다.</p>
+        </div>
+        <div class="calendar-legend" aria-label="달력 표시 설명">
+          <span><i class="required"></i><b data-copy-key="type.required">필수 방문</b></span>
+          <span><i class="deadline"></i><b data-copy-key="type.deadline">발주·준비</b></span>
+        </div>
+      </div>
+      <div class="calendar-stack" id="calendarStack" aria-live="polite"></div>
+      <article class="calendar-detail" id="calendarDetail" aria-live="polite">
+        <div>
+          <p class="eyebrow" data-copy-key="detail.selectedDate">SELECTED DATE</p>
+          <time id="detailDate"></time>
+        </div>
+        <div>
+          <div class="detail-heading"><span class="detail-type" id="detailType"></span><h3 id="detailTitle">등록된 일정 없음</h3></div>
+          <p id="detailText">정보 수정에서 고객별 공정 일정을 추가하세요.</p>
+          <div class="detail-prepare"><b data-copy-key="detail.prepareLabel">준비</b><span id="detailPrepare"></span></div>
+        </div>
+      </article>
+      <div class="calendar-boundary">
+        <b data-copy-key="boundary.title">방문 기준</b>
+        <p data-copy-key="boundary.body">ARC는 판단자료와 체크리스트를 제공합니다. 최종 시공 위치와 제품 정보는 고객이 현장팀에 전달하고 확인합니다.</p>
+        <ul class="visit-auto-rules">
+          <li data-copy-key="boundary.ruleFirst"><b>철거·목공·전기·타일·설비</b> 첫 시공일은 방문 필수</li>
+          <li data-copy-key="boundary.ruleDrilling"><b>전기타공</b>으로 입력된 날은 매번 방문 필수</li>
+          <li data-copy-key="boundary.ruleFurniture"><b>가구</b> 첫 시공일은 오후 현장 방문</li>
+        </ul>
+      </div>
+      <section class="print-detail-section" aria-labelledby="printDetailTitle">
+        <div class="print-detail-heading">
+          <p>FULL SCHEDULE DETAILS</p>
+          <h2 id="printDetailTitle">전체 공정 상세</h2>
+          <span>PDF에서는 날짜를 누를 수 없으므로 모든 공정의 설명과 준비사항을 펼쳐 표시합니다.</span>
+        </div>
+        <div class="print-detail-grid" id="printDetailList"></div>
+      </section>
+    </section>
+
+    <section class="section checklist-section" id="checklist" aria-labelledby="checklist-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow" data-copy-key="checklist.eyebrow">CUSTOMER CHECKLIST</p>
+          <h2 id="checklist-title" data-copy-key="checklist.title">고객 준비 체크리스트</h2>
+        </div>
+        <button class="text-button" id="resetChecklist" type="button">완료 표시 초기화</button>
+      </div>
+      <p class="section-intro" data-copy-key="checklist.intro">체크한 항목은 이 기기에 자동 저장됩니다.</p>
+      <div class="checklist-grid" id="checklistGrid"></div>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>ARC TEAM WORKS</span>
+    <p data-copy-key="footer.note">예정 공정표이며 현장 상황과 자재 입고 일정에 따라 변경될 수 있습니다. 변경 시 날짜·내용·확인한 사람을 함께 기록해 주세요.</p>
+  </footer>
+
+  <script id="arc-seed-data" type="application/json"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
