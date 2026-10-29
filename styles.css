@@ -12,7 +12,7 @@
   --gold: #47b8d6;
   --gold-pale: #edf9fc;
   --shadow: 0 18px 52px rgba(5, 155, 197, 0.11);
-  --dashboard-font: "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --dashboard-font: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-scale: 1;
 }
 
@@ -26,7 +26,7 @@ body {
   font-size: calc(14px * var(--font-scale));
   line-height: 1.55;
 }
-button, a { font: inherit; }
+button, a, input, select, textarea { font: inherit; }
 button { color: inherit; }
 [hidden] { display: none !important; }
 
@@ -60,7 +60,8 @@ button { color: inherit; }
 }
 .site-header::-webkit-scrollbar { height: 3px; }
 .site-header::-webkit-scrollbar-thumb { background: rgba(80, 106, 88, .28); border-radius: 999px; }
-.brand { display: inline-flex; flex: 0 0 auto; gap: 8px; align-items: center; color: var(--ink); text-decoration: none; font-size: .86rem; font-weight: 800; letter-spacing: .02em; white-space: nowrap; }
+.brand { display: inline-flex; flex: 0 0 auto; gap: 8px; align-items: center; color: var(--ink); text-decoration: none; font-size: .86rem; font-weight: 900; letter-spacing: .02em; white-space: nowrap; }
+.brand span { font-weight: 900; }
 .brand-mark { color: var(--sage-dark); }
 .site-header nav { display: flex; flex: 0 0 auto; gap: 12px; margin-left: auto; white-space: nowrap; }
 .site-header nav a { color: var(--muted); text-decoration: none; font-size: .78rem; font-weight: 700; white-space: nowrap; }

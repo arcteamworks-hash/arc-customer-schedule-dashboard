@@ -143,7 +143,7 @@ function renderProject() {
 }
 
 function renderDisplay(){
-  const fontMap={arc:'"Noto Sans KR", "Malgun Gothic", sans-serif',malgun:'"Malgun Gothic", sans-serif',serif:'"Noto Serif KR", "Batang", serif'};
+  const fontMap={arc:'"Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',malgun:'"Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',serif:'"Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'};
   document.querySelector("#hero-title").textContent=data.display.title||defaultData.display.title;
   document.querySelector(".hero-description").textContent=data.display.description||defaultData.display.description;
   document.documentElement.style.setProperty("--dashboard-font",fontMap[data.display.font]||fontMap.arc);
